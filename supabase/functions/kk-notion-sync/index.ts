@@ -308,7 +308,7 @@ Deno.serve(async (req: Request) => {
         }),
       },
       attendance: {
-        table: "notion_attendance", dbId: "4256f757-e9c9-818a-b310-000b76b65995",
+        table: "notion_attendance", dbId: "4256f757-e9c9-8196-8046-e980f87a12e5",
         map: (p) => ({
           title: plainTitle(p["Name"]), person: p["人员"]?.select?.name ?? null,
           type: p["类型"]?.select?.name ?? null, place: plain(p["地点"]),
