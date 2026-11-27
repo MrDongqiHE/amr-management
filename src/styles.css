@@ -46,7 +46,7 @@
 .wkrow b{display:block;font-size:12px;color:#1e293c;line-height:1.4}
 .wkrow span{display:block;font-size:10px;color:#8d95a4}
 .wkrow .pill{margin-left:auto;flex-shrink:0}
-.wkowner{font-size:10px;font-weight:700;color:#fff;border-radius:99px;padding:3px 9px;flex-shrink:0;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wkowner{font-size:10px;font-weight:700;color:#3c4656;border-radius:99px;padding:3px 9px;flex-shrink:0;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wkday{margin-bottom:6px}
 .wkdayhead{display:flex;justify-content:space-between;font-size:11px;color:#6d7788;padding:6px 10px;border-bottom:1px solid #eef0f4}
 .wkdayhead b{color:#33405a}
