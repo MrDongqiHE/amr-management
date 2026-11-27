@@ -86,3 +86,20 @@ button{cursor:pointer}button:disabled{opacity:.6;cursor:wait}.center{min-height:
 .pathbox{display:flex;flex-direction:column;gap:6px;padding:14px 0}
 .pathbox code{display:block;padding:10px 12px;background:#f5f7fa;border:1px solid #e3e8ef;border-radius:8px;font-size:12px;word-break:break-all;color:#3d4a5d}
 .pathlabel{font-size:12px;color:#a8b1bf}
+
+/* ---- 员工出勤日历（时间线）---- */
+.tltable{--tlw:26px;table-layout:fixed;border-collapse:separate;border-spacing:0}
+.tltable thead th{position:sticky;top:0;background:#fff;z-index:2;font-size:10.5px;font-weight:500;color:#8a94a3;border-bottom:1px solid #e5e9ef;padding:5px 0;min-width:var(--tlw);text-align:center}
+.tltable thead th.tlmonth{font-size:12px;font-weight:600;color:#2c3442;text-align:left;padding-left:8px;border-right:2px solid #e5e9ef;min-width:0}
+.tltable thead th.tlwk{color:#b6402f}
+.tltable th.tlname{position:sticky;left:0;background:#fff;z-index:3;text-align:left;font-size:13px;font-weight:600;padding:10px 12px;min-width:88px;border-bottom:1px solid #eef0f4;white-space:nowrap}
+.tltable td{height:44px;border-bottom:1px solid #eef0f4;min-width:var(--tlw);padding:0}
+.tltable td.tlwk{background:#f2f4f7}
+.tltable tr:last-child td,.tltable tr:last-child th{border-bottom:none}
+.tlbar{position:absolute;top:8px;height:28px;border-radius:5px;font-size:11.5px;font-weight:500;display:flex;align-items:center;padding:0 8px;overflow:hidden;white-space:nowrap;z-index:2;cursor:default}
+.tlbar.trip{background:#d6e6fb;border-left:3px solid #3b74c4;color:#1c2430}
+.tlbar.leave{background:#fdeec9;border-left:3px solid #c99a2e;color:#1c2430}
+.tlbar span{text-overflow:ellipsis;overflow:hidden}
+.atttl .scroll{overflow-x:auto}
+.atttl table{position:relative}
+.tltable .tlcells{position:relative;padding:0 !important;min-width:0}

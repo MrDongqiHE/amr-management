@@ -13,6 +13,7 @@
 // v10: 修复经验库"问题名称"为空：该属性是 title 类型，之前误用 plain()（rich_text）解析全为 null，改用 plainTitle()
 // v11: 修复官方/非官方资料库"资料名称"同样为空的问题（同 v10 根因：title 类型属性必须用 plainTitle）
 // v12: 新增 update-due action：拖拽改"预计完成"日期（null=清空），双写 Supabase + Notion
+// v13: 新增 attendance 镜像（员工出勤记录库）：sync-attendance 同步到 notion_attendance 表
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -304,6 +305,16 @@ Deno.serve(async (req: Request) => {
           yuqi: p["Yuqi LIU(实习)"]?.select?.name ?? null,
           dian: p["Dian.QU(实习)"]?.select?.name ?? null,
           note: plain(p["备注"]),
+        }),
+      },
+      attendance: {
+        table: "notion_attendance", dbId: "4256f757-e9c9-818a-b310-000b76b65995",
+        map: (p) => ({
+          title: plainTitle(p["Name"]), person: p["人员"]?.select?.name ?? null,
+          type: p["类型"]?.select?.name ?? null, place: plain(p["地点"]),
+          start_date: p["开始日期"]?.date?.start?.slice(0, 10) ?? null,
+          end_date: p["结束日期"]?.date?.start?.slice(0, 10) ?? null,
+          status: p["状态"]?.status?.name ?? null, note: plain(p["备注"]),
         }),
       },
     };
