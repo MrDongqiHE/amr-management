@@ -1,4 +1,4 @@
-import {FormEvent,useEffect,useMemo,useState} from 'react';
+import {FormEvent,useEffect,useMemo,useRef,useState} from 'react';
 import {Bell,ChevronRight,ClipboardList,FlaskConical,FolderKanban,LayoutDashboard,Loader2,LogOut,Menu,Plus,Search,TriangleAlert,Truck,X} from 'lucide-react';
 import type {Session} from '@supabase/supabase-js';
 import {supabase} from './supabase';import {apiUrl,apiFetch,setApiToken} from './api'; import type {DocEntry,ExpEntry,Item,NotionIssue,NotionProject,Project,SkillEntry} from './types';
@@ -104,9 +104,13 @@ function ProjectDetail({p,close,notice,refresh}:{p:NotionProject;close:()=>void;
 // ---- 总览：本周工作台（待办 todo + 按天按人完成/跟进汇总，数据源 notion_issues / notion_projects）----
 function WeekWorkbench({notice,openIssue,onActiveIssues}:{notice:(s:string)=>void;openIssue:(i:NotionIssue)=>void;onActiveIssues:(xs:NotionIssue[])=>void}){
  const [issues,setIssues]=useState<NotionIssue[]>([]),[busy,setBusy]=useState(false),[dragging,setDragging]=useState<string|null>(null);
- async function load(autoSync=true){setBusy(true);try{if(autoSync)await apiFetch(apiUrl('sync'),{method:'POST'});const {data,error}=await supabase!.from('notion_issues').select('*').order('created_date',{ascending:false});if(error)notice(error.message);else setIssues((data||[]).map((x:any)=>({id:x.notion_page_id,code:x.code,status:x.status,priority:x.priority,customer:x.customer,owner:x.owner,types:x.types||[],createdDate:x.created_date,resolvedDate:x.resolved_date,pageUrl:x.page_url,techDifficulty:x.tech_difficulty,dueDate:x.due_date,project:x.project,content:x.content,lastEdited:x.last_edited?String(x.last_edited).slice(0,10):null})))}finally{setBusy(false)}}
+ // 性能优化：先查本地 Supabase 表立即渲染（毫秒级），Notion 同步放后台跑完再刷新。
+ // 之前是"先等 Notion 全量同步完才查表"，导致总览每次要等好几秒。
+ async function load(autoSync=true){setBusy(true);const query=async()=>{const {data,error}=await supabase!.from('notion_issues').select('*').order('created_date',{ascending:false});if(error)notice(error.message);else setIssues((data||[]).map((x:any)=>({id:x.notion_page_id,code:x.code,status:x.status,priority:x.priority,customer:x.customer,owner:x.owner,types:x.types||[],createdDate:x.created_date,resolvedDate:x.resolved_date,pageUrl:x.page_url,techDifficulty:x.tech_difficulty,dueDate:x.due_date,project:x.project,content:x.content,lastEdited:x.last_edited?String(x.last_edited).slice(0,10):null})))};try{if(autoSync){query();try{await apiFetch(apiUrl('sync'),{method:'POST'})}catch{};await query()}else await query()}finally{setBusy(false)}}
  useEffect(()=>{load(true)},[]);
- usePolling(()=>load(true),60000);
+ // 轮询只刷本地表（快）；Notion 全量同步降频为每 10 分钟一次
+ const lastSyncRef=useRef(0);
+ usePolling(()=>{if(Date.now()-lastSyncRef.current>600000){lastSyncRef.current=Date.now();load(true)}else load(false)},60000);
  const short=(code:string)=>code.replace(/_\d{4}(?=\d{2}-)|_(未解决|WellDone|Closed|新包已解决|等待rtas日志|等待RCS研发回复)$/g,'');
  const today=new Date().toISOString().slice(0,10);
  // 本周工作日（往前推7天取工作日，跳过周六周日）
@@ -144,9 +148,12 @@ function WeekWorkbench({notice,openIssue,onActiveIssues}:{notice:(s:string)=>voi
 }
 function ProjectsPage({notice,query,activeIssues}:{notice:(s:string)=>void;query:string;activeIssues?:NotionIssue[]}){
  const [rows,setRows]=useState<NotionProject[]>([]),[busy,setBusy]=useState(false),[detail,setDetail]=useState<NotionProject|null>(null);
- async function load(autoSync=true){setBusy(true);try{if(autoSync)await apiFetch(apiUrl('sync-projects'),{method:'POST'});const {data,error}=await supabase!.from('notion_projects').select('*').order('title');if(error)notice(error.message);else setRows((data||[]).map((x:any)=>({id:x.notion_page_id,title:x.title,customer:x.customer,stage:x.stage,owner:x.owner,startDate:x.start_date,milestone:x.milestone,note:x.note,pageUrl:x.page_url})))}finally{setBusy(false)}}
+ // 同 WeekWorkbench：先渲染本地表，Notion 同步后台跑
+ async function load(autoSync=true){setBusy(true);const query=async()=>{const {data,error}=await supabase!.from('notion_projects').select('*').order('title');if(error)notice(error.message);else setRows((data||[]).map((x:any)=>({id:x.notion_page_id,title:x.title,customer:x.customer,stage:x.stage,owner:x.owner,startDate:x.start_date,milestone:x.milestone,note:x.note,pageUrl:x.page_url})))};try{if(autoSync){query();try{await apiFetch(apiUrl('sync-projects'),{method:'POST'})}catch{};await query()}else await query()}finally{setBusy(false)}}
  useEffect(()=>{load(true)},[]);
- usePolling(()=>{if(!detail)load(true)},30000);
+ // 轮询只刷本地表；Notion 全量同步降频 10 分钟
+ const lastSyncRef=useRef(0);
+ usePolling(()=>{if(!detail){if(Date.now()-lastSyncRef.current>600000){lastSyncRef.current=Date.now();load(true)}else load(false)}},30000);
  const filtered=rows.filter(p=>((p.title||'')+(p.customer||'')+(p.owner||'')+(p.note||'')).toLowerCase().includes(query.toLowerCase())&&(!activeIssues||activeIssues.some(i=>(i.project||'').includes(p.title||' '))));
  return <><div className="title"><div><h1>项目</h1><p>与 Notion 项目管理库同步 · 共 {rows.length} 个{busy?' · 同步中…':''} · 每30秒自动同步 · 数据源为 Notion，网页编辑会写回</p></div></div>
  <NpTable rows={filtered} open={setDetail}/>{detail&&<ProjectDetail p={detail} close={()=>setDetail(null)} notice={notice} refresh={()=>{setDetail(null);load(false)}}/>}</>
